@@ -1,13 +1,14 @@
 # OPCUA CI build using EPICS ci-scripts
 # (see: https://github.com/epics-base/ci-scripts)
 
-# open62541 SDK client library
+# open62541 SDK client library - Windows builds
+# =============================================
 
 # This is YAML - indentation levels are crucial
 
 # Set the 'name:' properties to values that work for you
 
-name: open62541 SDK based build and end-to-end test
+name: open62541 Windows build
 
 # Trigger on pushes and PRs to any branch
 on:
@@ -28,7 +29,7 @@ env:
   encrypted_178ee45b7f75_pass: ${{ secrets.encrypted_178ee45b7f75_pass }}
 
 jobs:
-  build-linux:
+  build-msvc:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     # Set environment variables from matrix parameters
@@ -42,58 +43,78 @@ jobs:
       matrix:
         include:
 
-          - os: ubuntu-20.04
-            cmp: gcc
-            configuration: default
-            base: "7.0"
-            open62541: "1.3.11"
-            name: "7.0 Ub-20 v1.3.11"
-
-          - os: ubuntu-20.04
-            cmp: gcc
-            configuration: default
-            base: "7.0"
-            open62541: "1.2.7"
-            name: "7.0 Ub-20 v1.2.7"
-
-          - os: ubuntu-20.04
-            cmp: gcc
-            configuration: default
-            base: "3.15"
-            open62541: "1.3.11"
-            name: "3.15 Ub-20 v1.3.11"
-
-          - os: ubuntu-20.04
-            cmp: gcc
-            configuration: default
-            base: "3.15"
-            open62541: "1.2.7"
-            name: "3.15 Ub-20 v1.2.7"
-
-          # Windows
-
           - os: windows-2019
             cmp: vs2019
             configuration: default
             base: "3.15"
             open62541: "1.3.11"
-            name: "3.15 Win2019 v1.3.11 MSC-19 DLL"
+            name: "3.15 Win2019 v1.3.11 VS2019 DLL"
 
           - os: windows-2019
-            cmp: gcc
+            cmp: vs2019
+            configuration: default
+            base: "7.0"
+            open62541: "1.3.11"
+            name: "7.0 Win2019 v1.3.11 VS2019 DLL"
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Download and compile open62541 client
+      run: |
+        python .ci-local/install-open62541.py
+    - name: Prepare build dependencies
+      run: |
+        python .ci/cue.py prepare
+    - name: Install MSVC dependencies
+      run: |
+        python .ci-local/install-msvc-deps.py
+    - name: Build main module
+      run: python .ci/cue.py build
+    - name: Run main module tests
+      run: python .ci/cue.py test
+    - name: Collect and show test results
+      run: python .ci/cue.py test-results
+
+  build-msys2:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    # Set environment variables from matrix parameters
+    env:
+      CMP: gcc
+      CHOCO: NO
+      BCFG: ${{ matrix.configuration }}
+      BASE: ${{ matrix.base }}
+      OPEN62541: ${{ matrix.open62541 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+
+          - os: windows-2019
             configuration: default
             base: "3.15"
             open62541: "1.3.11"
             name: "3.15 Win2019 v1.3.11 MinGW DLL"
 
           - os: windows-2019
-            cmp: gcc
-            configuration: static-debug
-            base: "3.15"
+            configuration: default
+            base: "7.0"
             open62541: "1.3.11"
-            name: "3.15 Win2019 v1.3.11 MinGW static"
+            name: "7.0 Win2019 v1.3.11 MinGW DLL"
 
     steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        release: false
+        msystem: mingw64
+        install: >-
+          git
+        pacboy: openssl:p
     - uses: actions/checkout@v4
       with:
         submodules: true
@@ -109,13 +130,3 @@ jobs:
       run: python .ci/cue.py test
     - name: Collect and show test results
       run: python .ci/cue.py test-results
-    - name: Install end2end test dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get -y install libfaketime faketime
-        sudo pip3 install pytest opcua pyepics
-        sudo pip3 install run-iocsh -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
-    - name: Run end2end tests
-      run: |
-        python .ci/cue.py exec make -C end2endTest/server
-        python .ci/cue.py exec pytest -v end2endTest/test_opcua.py
