@@ -11,7 +11,7 @@ import subprocess as sp
 import re
 
 gendef = 'C:/msys64/mingw64/bin/gendef'
-lib = 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\lib.exe'
+lib = 'C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe'
 
 curdir = os.getcwd()
 
