@@ -11,6 +11,7 @@ import subprocess as sp
 import re
 
 gendef = 'C:/msys64/mingw64/bin/gendef'
+lib = 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64\lib.exe'
 
 curdir = os.getcwd()
 
@@ -61,8 +62,8 @@ ICONV = {1}
 
     libdir = os.path.join(dirs[libxml2], 'lib')
     sp.check_call([gendef, '../bin/libxml2-2.dll'], cwd=libdir)
-    sp.check_call(['lib', '/def:libxml2-2.def', '/machine:x64', '/out:libxml2.lib'], cwd=libdir)
+    sp.check_call([lib, '/def:libxml2-2.def', '/machine:x64', '/out:libxml2.lib'], cwd=libdir)
 
     libdir = os.path.join(dirs[iconv], 'lib')
     sp.check_call([gendef, '../bin/libiconv2.dll'], cwd=libdir)
-    sp.check_call(['lib', '/def:libiconv-2.def', '/machine:x64', '/out:libiconv.lib'], cwd=libdir)
+    sp.check_call([lib, '/def:libiconv-2.def', '/machine:x64', '/out:libiconv.lib'], cwd=libdir)
